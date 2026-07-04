@@ -1,0 +1,58 @@
+class Solution {
+public:
+    vector<string> findRepeatedDnaSequences(string s) {
+        int n = s.size();
+        if (n < 10) return {};
+
+        const long long base = 5;
+        const long long mod = 1000000007;
+
+        unordered_map<char,int> val;
+        val['A'] = 1;
+        val['C'] = 2;
+        val['G'] = 3;
+        val['T'] = 4;
+
+        long long hash = 0;
+        long long power = 1;
+
+        for (int i = 1; i < 10; i++)
+            power = (power * base) % mod;
+
+        // First window
+        for (int i = 0; i < 10; i++)
+            hash = (hash * base + val[s[i]]) % mod;
+
+        unordered_map<long long, vector<int>> mp;
+        vector<string> ans;
+
+        mp[hash].push_back(0);
+
+        for (int i = 10; i < n; i++) {
+
+            hash = (hash - val[s[i-10]] * power % mod + mod) % mod;
+            hash = (hash * base + val[s[i]]) % mod;
+
+            int start = i - 9;
+
+            if (mp.count(hash)) {
+
+                bool found = false;
+
+                for (int idx : mp[hash]) {
+                    if (s.compare(idx,10,s,start,10) == 0) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found && mp[hash].size() == 1)
+                    ans.push_back(s.substr(start,10));
+            }
+
+            mp[hash].push_back(start);
+        }
+
+        return ans;
+    }
+};
