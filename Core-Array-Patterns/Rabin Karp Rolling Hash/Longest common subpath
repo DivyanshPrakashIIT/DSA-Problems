@@ -1,0 +1,75 @@
+class Solution {
+public:
+    using ULL = unsigned long long;
+
+    int longestCommonSubpath(int n, vector<vector<int>>& paths) {
+        int minLen = INT_MAX;
+        for (auto &p : paths)
+            minLen = min(minLen, (int)p.size());
+
+        int left = 0, right = minLen;
+        int ans = 0;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (check(paths, mid)) {
+                ans = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        return ans;
+    }
+
+private:
+    bool check(vector<vector<int>>& paths, int len) {
+        if (len == 0) return true;
+
+        const ULL base = 1000003;
+
+        unordered_set<ULL> common;
+        bool first = true;
+
+        for (auto &path : paths) {
+            if ((int)path.size() < len)
+                return false;
+
+            ULL power = 1;
+            for (int i = 0; i < len - 1; i++)
+                power *= base;
+
+            ULL hash = 0;
+
+            for (int i = 0; i < len; i++)
+                hash = hash * base + (ULL)(path[i] + 1);
+
+            unordered_set<ULL> cur;
+            cur.insert(hash);
+
+            for (int i = len; i < path.size(); i++) {
+                hash -= (ULL)(path[i - len] + 1) * power;
+                hash = hash * base + (ULL)(path[i] + 1);
+                cur.insert(hash);
+            }
+
+            if (first) {
+                common = move(cur);
+                first = false;
+            } else {
+                unordered_set<ULL> nxt;
+                for (auto h : cur) {
+                    if (common.count(h))
+                        nxt.insert(h);
+                }
+                common = move(nxt);
+            }
+
+            if (common.empty())
+                return false;
+        }
+
+        return !common.empty();
+    }
+};
