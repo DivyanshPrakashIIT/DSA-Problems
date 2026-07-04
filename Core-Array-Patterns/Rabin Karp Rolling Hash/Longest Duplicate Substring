@@ -1,0 +1,61 @@
+class Solution {
+public:
+    string longestDupSubstring(string s) {
+        int n = s.size();
+        const long long mod = 1000000007;
+        const long long base = 26;
+
+        auto check = [&](int len) -> int {
+            if (len == 0) return 0;
+
+            long long hash = 0;
+            long long power = 1;
+
+            // base^(len-1)
+            for (int i = 1; i < len; i++)
+                power = (power * base) % mod;
+
+            // First window hash
+            for (int i = 0; i < len; i++)
+                hash = (hash * base + (s[i] - 'a')) % mod;
+
+            unordered_map<long long, vector<int>> mp;
+            mp[hash].push_back(0);
+
+            for (int i = len; i < n; i++) {
+                hash = (hash - (s[i - len] - 'a') * power % mod + mod) % mod;
+                hash = (hash * base + (s[i] - 'a')) % mod;
+
+                if (mp.count(hash)) {
+                    for (int start : mp[hash]) {
+                        if (s.compare(start, len, s, i - len + 1, len) == 0)
+                            return start;
+                    }
+                }
+
+                mp[hash].push_back(i - len + 1);
+            }
+
+            return -1;
+        };
+
+        int left = 1, right = n - 1;
+        int start = -1, maxLen = 0;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+
+            int idx = check(mid);
+
+            if (idx != -1) {
+                start = idx;
+                maxLen = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        return (start == -1) ? "" : s.substr(start, maxLen);
+    }
+};
