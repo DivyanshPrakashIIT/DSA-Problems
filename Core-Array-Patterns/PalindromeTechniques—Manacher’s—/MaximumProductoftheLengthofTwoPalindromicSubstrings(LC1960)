@@ -1,0 +1,56 @@
+class Solution {
+public:
+    long long maxProduct(string s) {
+
+        int n = s.size();
+
+        // -------- Manacher (odd palindromes) --------
+        vector<int> d1(n);
+
+        int l = 0, r = -1;
+
+        for (int i = 0; i < n; i++) {
+
+            int k = (i > r) ? 1 : min(d1[l + r - i], r - i + 1);
+
+            while (i - k >= 0 &&
+                   i + k < n &&
+                   s[i - k] == s[i + k])
+                k++;
+
+            d1[i] = k--;
+
+            if (i + k > r) {
+                l = i - k;
+                r = i + k;
+            }
+        }
+
+        vector<long long> left(n);
+        vector<long long> right(n);
+
+        for (int i = 0; i < n; i++) {
+
+            int len = 2 * d1[i] - 1;
+
+            int L = i - d1[i] + 1;
+            int R = i + d1[i] - 1;
+
+            left[R] = max(left[R], (long long)len);
+            right[L] = max(right[L], (long long)len);
+        }
+
+        for (int i = 1; i < n; i++)
+            left[i] = max(left[i], left[i - 1]);
+
+        for (int i = n - 2; i >= 0; i--)
+            right[i] = max(right[i], right[i + 1]);
+
+        long long ans = 0;
+
+        for (int i = 0; i + 1 < n; i++)
+            ans = max(ans, left[i] * right[i + 1]);
+
+        return ans;
+    }
+};
