@@ -1,0 +1,45 @@
+class Solution {
+public:
+    vector<string> findRepeatedDnaSequences(string s) {
+
+        int n = s.size();
+
+        if(n < 10)
+            return {};
+
+        long long BASE = 31;
+        long long MOD = 1000000007;
+
+        vector<long long> power(n + 1, 1);
+        vector<long long> prefix(n + 1, 0);
+
+        for(int i = 0; i < n; i++) {
+            power[i + 1] = (power[i] * BASE) % MOD;
+            prefix[i + 1] = (prefix[i] * BASE + (s[i])) % MOD;
+        }
+
+        unordered_map<long long, vector<int>> mp;
+        unordered_set<string> ans;
+
+        for(int i = 0; i + 10 <= n; i++) {
+
+            long long hash =
+            (prefix[i + 10] - (prefix[i] * power[10]) % MOD + MOD) % MOD;
+
+            if(mp.find(hash) != mp.end()) {
+
+                for(int idx : mp[hash]) {
+
+                    if(s.substr(idx,10) == s.substr(i,10)) {
+                        ans.insert(s.substr(i,10));
+                        break;
+                    }
+                }
+            }
+
+            mp[hash].push_back(i);
+        }
+
+        return vector<string>(ans.begin(), ans.end());
+    }
+};
