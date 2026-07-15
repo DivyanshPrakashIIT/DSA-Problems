@@ -1,0 +1,35 @@
+class Solution {
+public:
+    string minWindow(string s, string t) {
+        unordered_map<char,int> mp;
+        for(int i = 0; i < t.size(); i++){
+            mp[t[i]]++;
+        }
+        unordered_map<char,int> mp1;
+        int required = mp.size();
+        int formed = 0;
+        int left = 0;
+        int start = 0;
+        int len = INT_MAX;
+        for(int right = 0; right < s.size(); right++){
+            mp1[s[right]]++;
+            if(mp.count(s[right]) && mp1[s[right]] == mp[s[right]]){
+                formed++;
+            }
+            while(formed == required){
+                if(right - left + 1 < len){
+                    len = right - left + 1;
+                    start = left;
+                }
+                mp1[s[left]]--;
+                if(mp.count(s[left]) && mp1[s[left]] < mp[s[left]]){
+                    formed--;
+                }
+                left++;
+            }
+        }
+        if(len == INT_MAX)
+            return "";
+        return s.substr(start, len);
+    }
+};
