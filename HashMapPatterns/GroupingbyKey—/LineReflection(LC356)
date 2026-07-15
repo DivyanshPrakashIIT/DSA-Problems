@@ -1,0 +1,41 @@
+class Solution {
+public:
+    bool isReflected(vector<vector<int>>& points) {
+
+        map<int, vector<int>> mp;
+
+        int minX = INT_MAX;
+        int maxX = INT_MIN;
+
+        // Group x by y
+        for (int i = 0; i < points.size(); i++) {
+
+            mp[points[i][1]].push_back(points[i][0]);
+
+            minX = min(minX, points[i][0]);
+            maxX = max(maxX, points[i][0]);
+        }
+
+        int sum = minX + maxX;
+
+        // Check every group
+        for (auto x : mp) {
+
+            sort(x.second.begin(), x.second.end());
+
+            int i = 0;
+            int j = x.second.size() - 1;
+
+            while (i <= j) {
+
+                if (x.second[i] + x.second[j] != sum)
+                    return false;
+
+                i++;
+                j--;
+            }
+        }
+
+        return true;
+    }
+};
