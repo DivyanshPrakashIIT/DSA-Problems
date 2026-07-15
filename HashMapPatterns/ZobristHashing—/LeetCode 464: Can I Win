@@ -1,0 +1,58 @@
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+class Solution {
+private:
+    // Memoization table to cache states and prevent recalculating game states
+    // Key: bitmask of chosen integers, Value: boolean result for the current player
+    unordered_map<int, bool> memo;
+
+    // Helper function implementing the minimax logic with state compression
+    bool evaluateState(int maxChoosable, int remainingTotal, int mask) {
+        // If this exact layout of chosen numbers has been checked before, return it
+        if (memo.count(mask)) return memo[mask];
+
+        // Iterate through all possible integers to pick
+        for (int i = 1; i <= maxChoosable; ++i) {
+            int current_bit = 1 << (i - 1);
+
+            // If the integer 'i' is still available to pick
+            if ((mask & current_bit) == 0) {
+                
+                // If picking 'i' directly meets or exceeds the target, we win instantly
+                if (remainingTotal <= i) {
+                    return memo[mask] = true;
+                }
+
+                // Transition state: Pass the updated board to the opponent.
+                // If the opponent CANNOT win from the next state, current player wins!
+                if (!evaluateState(maxChoosable, remainingTotal - i, mask | current_bit)) {
+                    return memo[mask] = true;
+                }
+            }
+        }
+
+        // If no optimal pick guarantees a win, the current player loses from this state
+        return memo[mask] = false;
+    }
+
+public:
+    bool canIWin(int maxChoosableInteger, int desiredTotal) {
+        // Edge Case 1: If the target is already 0 or negative, Player 1 wins on the spot
+        if (desiredTotal <= 0) return true;
+
+        // Edge Case 2: Max possible sum from the pool of numbers
+        int totalSum = (maxChoosableInteger * (maxChoosableInteger + 1)) / 2;
+        
+        // If total sum of all elements is less than target, no one can ever reach it
+        if (totalSum < desiredTotal) return false;
+
+        // Reset memory for fresh state space evaluation
+        memo.clear();
+
+        // Start recursion with empty pool (mask = 0)
+        return evaluateState(maxChoosableInteger, desiredTotal, 0);
+    }
+};
