@@ -1,0 +1,34 @@
+class Solution {
+public:
+    int leastBricks(vector<vector<int>>& wall) {
+
+        vector<vector<long long>> sum(wall.size());
+
+        for (int i = 0; i < wall.size(); i++) {
+
+            sum[i].resize(wall[i].size());
+
+            sum[i][0] = wall[i][0];
+
+            for (int j = 1; j < wall[i].size(); j++) {
+                sum[i][j] = sum[i][j - 1] + wall[i][j];
+            }
+        }
+
+        unordered_map<long long, int> mp;
+
+        for (int i = 0; i < sum.size(); i++) {
+            for (int j = 0; j < sum[i].size() - 1; j++) {
+                mp[sum[i][j]]++;
+            }
+        }
+
+        int maxi = 0;
+
+        for (auto x : mp) {
+            maxi = max(maxi, x.second);
+        }
+
+        return wall.size() - maxi;
+    }
+};
