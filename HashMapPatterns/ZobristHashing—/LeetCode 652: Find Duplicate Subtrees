@@ -1,0 +1,75 @@
+#include <vector>
+#include <unordered_map>
+#include <random>
+
+using namespace std;
+
+class Solution {
+private:
+    // High-quality 64-bit pseudo-random number generator
+    mt19937_64 rng;
+    
+    // Maps to dynamically assign unique random 64-bit IDs to different structural layers
+    unordered_map<int, unsigned long long> node_rand;
+    unordered_map<unsigned long long, unsigned long long> left_rand;
+    unordered_map<unsigned long long, unsigned long long> right_rand;
+    
+    // To track frequency of unique subtree hashes
+    unordered_map<unsigned long long, int> hash_count;
+    vector<TreeNode*> duplicate_roots;
+
+    // Helper methods to dynamically fetch or generate keys for the Zobrist expression
+    unsigned long long get_node_rand(int val) {
+        if (node_rand.find(val) == node_rand.end()) node_rand[val] = rng();
+        return node_rand[val];
+    }
+
+    unsigned long long get_left_rand(unsigned long long h) {
+        if (left_rand.find(h) == left_rand.end()) left_rand[h] = rng();
+        return left_rand[h];
+    }
+
+    unsigned long long get_right_rand(unsigned long long h) {
+        if (right_rand.find(h) == right_rand.end()) right_rand[h] = rng();
+        return right_rand[h];
+    }
+
+    // Post-order traversal to calculate structural Zobrist hashes bottom-up
+    unsigned long long calculateSubtreeHash(TreeNode* node) {
+        if (!node) return 0; // Standard base case: Null nodes represent a 0 hash code
+
+        // 1. Bottom-up post-order collection
+        unsigned long long left_hash = calculateSubtreeHash(node->left);
+        unsigned long long right_hash = calculateSubtreeHash(node->right);
+
+        // 2. Synthesize a unique signature using XOR across all structural dependencies
+        unsigned long long current_hash = get_node_rand(node->val) ^ 
+                                         get_left_rand(left_hash) ^ 
+                                         get_right_rand(right_hash);
+
+        // 3. Keep track of occurrences
+        hash_count[current_hash]++;
+        
+        // Exact equality check to insert the root of duplicates exactly once
+        if (hash_count[current_hash] == 2) { 
+            duplicate_roots.push_back(node);
+        }
+
+        return current_hash;
+    }
+
+public:
+    vector<TreeNode*> findDuplicateSubtrees(TreeNode* root) {
+        // Initialize/reset with a fixed seed for deterministic behavior across calls
+        rng.seed(1337);
+        
+        duplicate_roots.clear();
+        hash_count.clear();
+        node_rand.clear();
+        left_rand.clear();
+        right_rand.clear();
+        
+        calculateSubtreeHash(root);
+        return duplicate_roots;
+    }
+};
