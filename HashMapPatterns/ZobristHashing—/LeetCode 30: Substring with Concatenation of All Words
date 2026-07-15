@@ -1,0 +1,95 @@
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <random>
+
+using namespace std;
+
+class Solution {
+public:
+    vector<int> findSubstring(string s, vector<string>& words) {
+        int n = s.length();
+        int k = words.size();
+        int len = words[0].length();
+        int total_len = k * len;
+        
+        if (n < total_len) return {};
+
+        // 1. Assign a unique random 64-bit integer to each unique word
+        mt19937_64 rng(42); // Fixed seed for deterministic results
+        unordered_map<string, unsigned long long> word_to_hash;
+        
+        unsigned long long target_hash = 0;
+        for (const string& w : words) {
+            if (word_to_hash.find(w) == word_to_hash.end()) {
+                word_to_hash[w] = rng();
+            }
+            target_hash += word_to_hash[w]; // Additive hashing to handle duplicates
+        }
+
+        vector<int> result;
+
+        // Precompute hashes of all possible substrings of length 'len' to avoid repeated hashing
+        // This acts as a cache for our O(1) lookups
+        vector<unsigned long long> s_hashes(n - len + 1, 0);
+        for (int i = 0; i <= n - len; ++i) {
+            string sub = s.substr(i, len);
+            if (word_to_hash.count(sub)) {
+                s_hashes[i] = word_to_hash[sub];
+            } else {
+                s_hashes[i] = 0; // If word is not in our vocabulary, its hash is 0
+            }
+        }
+
+        // 2. Sliding Window in 'len' phases
+        // Phase 'i' handles words starting at indices i, i + len, i + 2*len...
+        for (int i = 0; i < len; ++i) {
+            if (i + total_len > n) break;
+
+            unsigned long long current_window_hash = 0;
+            
+            // Initialize the first window of size total_len
+            for (int j = 0; j < k; ++j) {
+                current_window_hash += s_hashes[i + j * len];
+            }
+
+            // If hash matches, we double check (or directly push to avoid overhead)
+            if (current_window_hash == target_hash) {
+                if (isValid(s, i, words, word_to_hash, len)) {
+                    result.push_back(i);
+                }
+            }
+
+            // Slide the window by 'len' steps at a time
+            for (int j = i + len; j + total_len <= n; j += len) {
+                // Subtract the word leaving the window (from the left side)
+                current_window_hash -= s_hashes[j - len];
+                // Add the word entering the window (to the right side)
+                current_window_hash += s_hashes[j + (k - 1) * len];
+
+                if (current_window_hash == target_hash) {
+                    if (isValid(s, j, words, word_to_hash, len)) {
+                        result.push_back(j);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+private:
+    // Double check to prevent false positives due to hash collisions (highly unlikely but safe)
+    bool isValid(const string& s, int start, const vector<string>& words, 
+                 unordered_map<string, unsigned long long>& word_to_hash, int len) {
+        unordered_map<string, int> temp_count;
+        for (const string& w : words) temp_count[w]++;
+
+        for (int i = 0; i < words.size(); ++i) {
+            string sub = s.substr(start + i * len, len);
+            if (temp_count[sub] == 0) return false;
+            temp_count[sub]--;
+        }
+        return true;
+    }
+};
