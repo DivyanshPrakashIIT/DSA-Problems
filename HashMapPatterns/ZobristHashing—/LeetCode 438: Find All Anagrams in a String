@@ -1,0 +1,58 @@
+#include <vector>
+#include <string>
+#include <random>
+
+using namespace std;
+
+class Solution {
+public:
+    vector<int> findAnagrams(string s, string p) {
+        int ns = s.length(), np = p.length();
+        if (ns < np) return {};
+
+        // 1. Initialize random 64-bit numbers for each character 'a' through 'z'
+        // We use mt19937_64 for high-quality 64-bit random numbers
+        mt19937_64 rng(1337); // Fixed seed for reproducibility
+        vector<unsigned long long> zobrist_table(26);
+        for (int i = 0; i < 26; ++i) {
+            zobrist_table[i] = rng();
+        }
+
+        // 2. Compute the hash for the target string 'p'
+        unsigned long long target_hash = 0;
+        for (char ch : p) {
+            target_hash ^= zobrist_table[ch - 'a'];
+        }
+
+        vector<int> result;
+        unsigned long long current_window_hash = 0;
+
+        // 3. Process the first window of size np in string 's'
+        for (int i = 0; i < np; ++i) {
+            current_window_hash ^= zobrist_table[s[i] - 'a'];
+        }
+
+        // Check the first window
+        if (current_window_hash == target_hash) {
+            result.push_back(0);
+        }
+
+        // 4. Slide the window across the rest of string 's'
+        for (int i = np; i < ns; ++i) {
+            // Remove the character going out of the window (leftmost character)
+            char char_to_remove = s[i - np];
+            current_window_hash ^= zobrist_table[char_to_remove - 'a'];
+
+            // Add the new character coming into the window (rightmost character)
+            char char_to_add = s[i];
+            current_window_hash ^= zobrist_table[char_to_add - 'a'];
+
+            // If hashes match, we found a starting index of an anagram
+            if (current_window_hash == target_hash) {
+                result.push_back(i - np + 1);
+            }
+        }
+
+        return result;
+    }
+};
