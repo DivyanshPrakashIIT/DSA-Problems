@@ -1,0 +1,148 @@
+#include <iostream>
+#include <vector>
+#include <cstdint>
+#include <random>
+
+using namespace std;
+
+// Enum for Piece Indexing mapping
+enum Pieces {
+    WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING,
+    BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING
+};
+
+// Global Zobrist Keys Structure Table
+struct ZobristKeys {
+    uint64_t pieces[64][12];     // [Square Index 0-63][Piece Type 0-11]
+    uint64_t castling[16];       // 4 bits representation = 16 combinations
+    uint64_t en_passant[65];     // 64 squares + 1 index for "No En Passant"
+    uint64_t side_to_move;       // Swapped out dynamically if Black's turn
+} keys;
+
+// Global Setup function to initialize unique pseudo-random 64-bit integers
+void initZobristKeys() {
+    mt19937_64 rng(2026); // Deterministic seed for identical executions
+    
+    for (int sq = 0; sq < 64; ++sq) {
+        for (int p = 0; p < 12; ++p) {
+            keys.pieces[sq][p] = rng();
+        }
+    }
+    for (int i = 0; i < 16; ++i) keys.castling[i] = rng();
+    for (int i = 0; i < 65; ++i) keys.en_passant[i] = rng();
+    keys.side_to_move = rng();
+}
+
+// Complete Chessboard Bit-Level State Representation
+class ChessBoard {
+public:
+    uint64_t piece_bitboards[12];
+    
+    // Metadata block: 
+    // Bits 0-3: Castling rights (White King side, White Queen side, Black King, Black Queen)
+    // Bits 4-10: En Passant Square Index (0-63, 64 if none)
+    // Bit 11: Active Side to Move (0 = White, 1 = Black)
+    uint32_t metadata;
+    uint64_t current_zobrist_hash;
+
+    ChessBoard() {
+        for (int i = 0; i < 12; ++i) piece_bitboards[i] = 0ULL;
+        metadata = 64 << 4; // Turn = 0 (White), En Passant = 64 (None), Castling = 0
+        current_zobrist_hash = 0ULL;
+    }
+
+    // Explicit Helper to get parameters safely from metadata
+    int getEnPassantSquare() const { return (metadata >> 4) & 0x3F; }
+    int getCastlingRights() const { return metadata & 0x0F; }
+    int getSideToMove() const { return (metadata >> 11) & 1; }
+
+    // Generates the initial absolute hash value from scratch
+    void generateFullHash() {
+        current_zobrist_hash = 0ULL;
+        
+        // 1. Accumulate all pieces on active positions
+        for (int p = 0; p < 12; ++p) {
+            uint64_t bitboard = piece_bitboards[p];
+            while (bitboard) {
+                int sq = __builtin_ctzll(bitboard); // Find trailing zero (Square Index)
+                current_zobrist_hash ^= keys.pieces[sq][p];
+                bitboard &= (bitboard - 1); // Clear the lowest set bit
+            }
+        }
+
+        // 2. Accumulate metadata metrics
+        current_zobrist_hash ^= keys.castling[getCastlingRights()];
+        current_zobrist_hash ^= keys.en_passant[getEnPassantSquare()];
+        if (getSideToMove() == 1) {
+            current_zobrist_hash ^= keys.side_to_move;
+        }
+    }
+
+    // --- INCREMENTAL STATE TRANSITION ENGINE ---
+    // Simulates moving a piece safely with direct O(1) hash manipulation updates
+    void makeMove(int from_sq, int to_sq, int piece_type, int captured_piece = -1) {
+        // Step A: XOR out the old positional layout of the moving piece
+        current_zobrist_hash ^= keys.pieces[from_sq][piece_type];
+        piece_bitboards[piece_type] &= ~(1ULL << from_sq); // Clear original bit
+
+        // Step B: If there's a capture, wipe the captured piece from both data points instantly
+        if (captured_piece != -1) {
+            current_zobrist_hash ^= keys.pieces[to_sq][captured_piece];
+            piece_bitboards[captured_piece] &= ~(1ULL << to_sq);
+        }
+
+        // Step C: XOR in the new position layout
+        current_zobrist_hash ^= keys.pieces[to_sq][piece_type];
+        piece_bitboards[piece_type] |= (1ULL << to_sq);
+
+        // Step D: Wipe old configuration metadata states out of the hash
+        current_zobrist_hash ^= keys.castling[getCastlingRights()];
+        current_zobrist_hash ^= keys.en_passant[getEnPassantSquare()];
+
+        // Swap Side Turn
+        int current_side = getSideToMove();
+        current_zobrist_hash ^= keys.side_to_move; // Always flips the turn bit in Zobrist
+
+        // Modify metadata parameters dynamically
+        int next_side = 1 - current_side;
+        metadata = (metadata & ~(1 << 11)) | (next_side << 11);
+        
+        // Re-inject updated metadata keys back into the Zobrist code
+        current_zobrist_hash ^= keys.castling[getCastlingRights()];
+        current_zobrist_hash ^= keys.en_passant[getEnPassantSquare()];
+    }
+};
+
+int main() {
+    // 1. Precompute global random spaces
+    initZobristKeys();
+
+    // 2. Mock board instance setup
+    ChessBoard board;
+    
+    // Let's place a White Knight on E4 (Square 28) and a Black Rook on D5 (Square 35)
+    board.piece_bitboards[WHITE_KNIGHT] |= (1ULL << 28);
+    board.piece_bitboards[BLACK_ROOK] |= (1ULL << 35);
+    
+    board.generateFullHash();
+    cout << "Initial Board Zobrist Hash Code: 0x" << hex << board.current_zobrist_hash << dec << endl;
+
+    // 3. Perform a quick transaction: White Knight takes the Black Rook on Square 35
+    uint64_t pre_move_hash = board.current_zobrist_hash;
+    
+    board.makeMove(28, 35, WHITE_KNIGHT, BLACK_ROOK);
+    
+    cout << "Hash code *AFTER* dynamic transition: 0x" << hex << board.current_zobrist_hash << dec << endl;
+
+    // Double Verification Logic: recalculate hash from scratch to ensure O(1) tracking matches perfectly
+    uint64_t incremental_calculated_hash = board.current_zobrist_hash;
+    board.generateFullHash();
+    
+    if (incremental_calculated_hash == board.current_zobrist_hash) {
+        cout << " SUCCESS: Incremental XOR update matches the complete scratch re-evaluation!" << endl;
+    } else {
+        cout << " FAILURE: Structural mismatch identified in the layer mapping logic." << endl;
+    }
+
+    return 0;
+}
