@@ -1,0 +1,23 @@
+class Solution {
+public:
+    int findDuplicate(vector<int>& nums) {
+        // Shuruat mein pehla step manually le lo taaki 'while' condition first time fail na ho
+        int turtle = nums[0];          // Turtle 1 step aage gaya
+        int rabbit = nums[nums[0]];    // Rabbit 2 steps aage gaya
+        
+        // Step 1: Meeting point dhundo
+        while (turtle != rabbit) {
+            turtle = nums[turtle];          // 1 step
+            rabbit = nums[nums[rabbit]];    // 2 steps
+        }
+        
+        // Step 2: Cycle ka starting point (Duplicate) dhundo
+        turtle = 0; // Turtle ko pure start (index 0) par bhejo
+        while (turtle != rabbit) {
+            turtle = nums[turtle]; // Dono ab 1-1 step chalenge
+            rabbit = nums[rabbit];
+        }
+        
+        return turtle; // Mil gaya duplicate number!
+    }
+};
