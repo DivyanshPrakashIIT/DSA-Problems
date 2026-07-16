@@ -1,0 +1,53 @@
+class Solution {
+public:
+    // Hamara wahi simple 2-lists merge karne wala helper function
+    ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {
+        if (list1 == nullptr) return list2;
+        if (list2 == nullptr) return list1;
+
+        ListNode* head = nullptr;
+        ListNode* tail = nullptr;
+
+        if (list1->val <= list2->val) {
+            head = list1;
+            list1 = list1->next;
+        } else {
+            head = list2;
+            list2 = list2->next;
+        }
+        tail = head;
+
+        while (list1 != nullptr && list2 != nullptr) {
+            if (list1->val <= list2->val) {
+                tail->next = list1;
+                list1 = list1->next;
+            } else {
+                tail->next = list2;
+                list2 = list2->next;
+            }
+            tail = tail->next;
+        }
+
+        if (list1 != nullptr) tail->next = list1;
+        else tail->next = list2;
+
+        return head;
+    }
+
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        if (lists.empty()) return nullptr;
+        
+        int k = lists.size();
+        // Jab tak vector mein sirf 1 list nahi bach jaati
+        while (k > 1) {
+            for (int i = 0; i < k / 2; i++) {
+                // i-th list ko peeche se (k - 1 - i)-th list ke sath merge karo
+                lists[i] = mergeTwoLists(lists[i], lists[k - 1 - i]);
+            }
+            // Har round ke baad active lists ka count aadha ho jayega
+            k = (k + 1) / 2; 
+        }
+        
+        return lists[0];
+    }
+};
