@@ -6,61 +6,69 @@ using namespace std;
 
 class MyHashMap {
 private:
-    // Choosing a prime number for bucket size significantly reduces hash collisions
+    // Choosing a prime number significantly reduces the frequency of collisions
     static const int BUCKET_SIZE = 10007;
     
-    // The main storage: An array of lists containing {key, value} pairs
+    // Core memory table: Array of linked lists storing {key, value} pairs
     vector<list<pair<int, int>>> buckets;
 
-    // Internal hash function to map keys to bucket indices
+    // Helper: Polynomial hash indexing logic
     int getHashIndex(int key) {
         return key % BUCKET_SIZE;
     }
 
 public:
     MyHashMap() {
-        // Pre-allocate the buckets layout
+        // Pre-allocate bucket structures
         buckets.resize(BUCKET_SIZE);
     }
     
     void put(int key, int value) {
         int idx = getHashIndex(key);
         
-        // Traverse the specific linked list at buckets[idx]
+        // Iterate through the target bucket chain to check for existing keys
         for (auto& element : buckets[idx]) {
             if (element.first == key) {
-                element.second = value; // Key found, update its value
+                element.second = value; // Key found, update value instantly
                 return;
             }
         }
         
-        // Key not found, append the new pair to the list
+        // Key doesn't exist, insert new entry at the end of the chain
         buckets[idx].push_back({key, value});
     }
     
     int get(int key) {
         int idx = getHashIndex(key);
         
-        // Search for the key in the target bucket chain
+        // Search inside the corresponding collision chain
         for (const auto& element : buckets[idx]) {
             if (element.first == key) {
-                return element.second; // Return value if found
+                return element.second; // Return matched value
             }
         }
         
-        return -1; // Return -1 if the key doesn't exist
+        return -1; // Standard marker for missing key layout
     }
     
     void remove(int key) {
         int idx = getHashIndex(key);
         
-        // Iterate using an explicit iterator to perform safe deletion during traversal
         auto& chain = buckets[idx];
+        // Explicit iterator loop for dynamic safe removal while parsing nodes
         for (auto it = chain.begin(); it != chain.end(); ++it) {
             if (it->first == key) {
-                chain.erase(it); // Key found, remove it from the chain
+                chain.erase(it); // Erase node point, breaking links safely
                 return;
             }
         }
     }
 };
+
+/**
+ * Your MyHashMap object will be instantiated and called as such:
+ * MyHashMap* obj = new MyHashMap();
+ * obj->put(key,value);
+ * int param_2 = obj->get(key);
+ * obj->remove(key);
+ */
