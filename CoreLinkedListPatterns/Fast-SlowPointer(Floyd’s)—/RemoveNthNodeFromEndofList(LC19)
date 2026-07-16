@@ -1,0 +1,36 @@
+class Solution {
+public:
+    ListNode* removeNthFromEnd(ListNode* head, int n) {
+        ListNode* rabbit = head;
+        ListNode* turtle = head;
+        
+        // Step 1: Rabbit ko exactly 'n' steps aage badhao (0 se n-1 tak)
+        for(int i = 0; i < n; i++){
+            // Waise safe rehne ke liye check kar sakte hain, par problem description ke mutabik n hamesha valid hoga
+            if (rabbit == NULL) return head; 
+            rabbit = rabbit->next;
+        }
+        
+        // EDGE CASE: Agar rabbit chalte-chalte NULL par pahonch gaya, 
+        // iska matlab hume HEAD node ko hi remove karna hai!
+        if (rabbit == NULL) {
+            ListNode* temp = head;
+            head = head->next; // Head ko aage badha do
+            delete temp;       // Purane head ko delete kar do
+            return head;
+        }
+        
+        // Step 2: Ab dono ko tab tak badhao jab tak rabbit last node par na pahonch jaye
+        while(rabbit->next != NULL){
+            turtle = turtle->next;
+            rabbit = rabbit->next;
+        }
+        
+        // Step 3: Turtle ke aage wale node ko delete karo
+        ListNode* temp = turtle->next;
+        turtle->next = turtle->next->next;
+        delete temp;
+        
+        return head;
+    }
+};
