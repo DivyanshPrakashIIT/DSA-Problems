@@ -1,0 +1,28 @@
+class Solution {
+public:
+    ListNode* swapNodes(ListNode* head, int k) {
+        ListNode* first = head;
+        
+        // STEP 1: Shuruat se k-th node tak pahoncho
+        // Hum loop ko k-1 baar chalayenge kyunki hum already 1st node (head) par hain
+        for (int i = 1; i < k; i++) {
+            first = first->next;
+        }
+        
+        // STEP 2 & 3: End se k-th node dhundne ke liye gap method lagao
+        ListNode* curr = first;
+        ListNode* second = head;
+        
+        while (curr->next != nullptr) {
+            curr = curr->next;
+            second = second->next;
+        }
+        
+        // STEP 4: Dono nodes ki sirf VALUES ko swap karo
+        int temp = first->val;
+        first->val = second->val;
+        second->val = temp;
+        
+        return head;
+    }
+};
