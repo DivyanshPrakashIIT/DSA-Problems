@@ -1,0 +1,54 @@
+class Solution {
+public:
+    // Hamara standard reverse function jo humne pehle sikha tha
+    // Yeh reversed list ka naya head return karta hai
+    ListNode* reverseList(ListNode* head) {
+        ListNode* prev = NULL;
+        ListNode* curr = head;
+        while (curr != NULL) {
+            ListNode* nextNode = curr->next;
+            curr->next = prev;
+            prev = curr;
+            curr = nextNode;
+        }
+        return prev;
+    }
+
+    ListNode* reverseBetween(ListNode* head, int left, int right) {
+        if (head == NULL || left == right) return head;
+
+        ListNode* dummy = new ListNode(0);
+        dummy->next = head;
+
+        // 1. 'left' ke theek pehle waale node par pahoncho
+        ListNode* beforeLeft = dummy;
+        for (int i = 0; i < left - 1; i++) {
+            beforeLeft = beforeLeft->next;
+        }
+
+        // 2. 'right' waale node par pahoncho
+        ListNode* rightNode = beforeLeft;
+        for (int i = 0; i < (right - left + 1); i++) {
+            rightNode = rightNode->next;
+        }
+
+        // Pointers ko sambhalo taaki list isolated ho sake
+        ListNode* sublistHead = beforeLeft->next; // Sublist ka start
+        ListNode* afterRight = rightNode->next;   // Sublist ke baad wali list
+
+        // 3. Sublist ko baaki list se temporary ALAG (Disconnect) karo
+        rightNode->next = NULL; 
+        beforeLeft->next = NULL;
+
+        // 4. Beech ke nodes ko reverse function mein daal do
+        ListNode* reversedSublistHead = reverseList(sublistHead);
+
+        // 5. Wapas beech mein INSERT (Connect) karo
+        beforeLeft->next = reversedSublistHead; // Shuruat wali list ko reversed head se joda
+        sublistHead->next = afterRight;         // Purana head ab tail ban chuka hai, use aage wali list se joda
+
+        ListNode* newHead = dummy->next;
+        delete dummy;
+        return newHead;
+    }
+};
