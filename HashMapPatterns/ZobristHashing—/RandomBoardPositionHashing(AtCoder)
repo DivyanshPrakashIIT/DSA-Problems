@@ -1,0 +1,63 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <random>
+#include <chrono>
+
+using namespace std;
+
+// High-Performance Anti-Hack Hash Selector for AtCoder Platforms
+struct AtCoderStateHash {
+    static uint64_t splitmix64(uint64_t x) {
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+class GridPositionHasher {
+private:
+    int H, W, V;
+    // 3D Matrix Layer representation: [Row][Column][State_Value]
+    vector<vector<vector<uint64_t>>> random_matrix;
+    uint64_t active_grid_hash;
+
+public:
+    void setupHasher(int rows, int cols, int max_values) {
+        this->H = rows;
+        this->W = cols;
+        this->V = max_values;
+
+        // Seeding with mt19937_64 to secure complete range allocation
+        mt19937_64 generator(13372026); 
+
+        random_matrix.assign(H, vector<vector<uint64_t>>(W, vector<uint64_t>(V)));
+        for (int r = 0; r < H; ++r) {
+            for (int c = 0; c < W; ++c) {
+                for (int v = 0; v < V; ++v) {
+                    random_matrix[r][c][v] = generator();
+                }
+            }
+        }
+        active_grid_hash = 0ULL;
+    }
+
+    // Calculates the complete grid hash fingerprint from scratch: O(H * W)
+    uint64_t buildFullGridHash(const vector<vector<int>>& grid) {
+        active_grid_hash = 0ULL;
+        for (int r = 0; r < H; ++r) {
+            for (int c = 0; c < W; ++c) {
+                int value = grid[r][c];
+                active_grid_hash ^= random_matrix[r][c][value];
+            }
+        }
+        return active_grid_hash;
+    }
+
+    // --- INCREMENTAL TRANSITION
