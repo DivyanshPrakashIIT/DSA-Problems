@@ -1,0 +1,44 @@
+class Solution {
+public:
+    ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {
+        // Base Cases: Agar koi ek list khali hai, toh doosri return kar do
+        if (list1 == NULL) return list2;
+        if (list2 == NULL) return list1;
+
+        // Hum do pointer banate hain jo final result ka track rakhenge
+        ListNode* head = NULL; // Yeh hamari merged list ka start hoga
+        ListNode* tail = NULL; // Yeh naye connections banane mein madad karega
+
+        // Pehla node select karo jiske paas choti value hai
+        if (list1->val <= list2->val) {
+            head = list1;
+            list1 = list1->next;
+        } else {
+            head = list2;
+            list2 = list2->next;
+        }
+        tail = head; // Shuruat mein tail bhi wahi hoga jo head hai
+
+        // Jab tak dono lists mein elements bache hain
+        while (list1 != NULL && list2 != NULL) {
+            if (list1->val <= list2->val) {
+                tail->next = list1;  // tail ko list1 ke current node se joda
+                list1 = list1->next; // list1 ko ek step aage badhaya
+            } else {
+                tail->next = list2;  // tail ko list2 ke current node se joda
+                list2 = list2->next; // list2 ko ek step aage badhaya
+            }
+            tail = tail->next; // tail ko hamesha aakhri node par le jao
+        }
+
+        // Agar loop se bahar aaye hain, matlab koi ek list khali ho gayi hai.
+        // Jo bhi list bachi hui hai, use direct end mein attach kar do!
+        if (list1 != NULL) {
+            tail->next = list1;
+        } else {
+            tail->next = list2;
+        }
+
+        return head; // Purani lists ke nodes se hi bani nayi sorted list ka head
+    }
+};
