@@ -1,0 +1,69 @@
+class Solution {
+public:
+    // STEP 1: Fast-Slow pointer se middle element nikalna
+    ListNode* getMid(ListNode* head) {
+        ListNode* slow = head;
+        ListNode* fast = head->next; // isse slow hamesha first half ke end par rukega
+        
+        while (fast != nullptr && fast->next != nullptr) {
+            slow = slow->next;
+            fast = fast->next->next;
+        }
+        return slow; // Yeh mid node hai
+    }
+
+    // STEP 2: Tumhara wahi standard mergeTwoLists function (In-place pointers version)
+    ListNode* merge(ListNode* list1, ListNode* list2) {
+        if (list1 == nullptr) return list2;
+        if (list2 == nullptr) return list1;
+
+        ListNode* head = nullptr;
+        ListNode* tail = nullptr;
+
+        if (list1->val <= list2->val) {
+            head = list1;
+            list1 = list1->next;
+        } else {
+            head = list2;
+            list2 = list2->next;
+        }
+        tail = head;
+
+        while (list1 != nullptr && list2 != nullptr) {
+            if (list1->val <= list2->val) {
+                tail->next = list1;
+                list1 = list1->next;
+            } else {
+                tail->next = list2;
+                list2 = list2->next;
+            }
+            tail = tail->next;
+        }
+
+        if (list1 != nullptr) tail->next = list1;
+        else tail->next = list2;
+
+        return head;
+    }
+
+    // Main Function
+    ListNode* sortList(ListNode* head) {
+        // Base Case: Agar list khali hai ya sirf 1 element hai, toh woh already sorted hai
+        if (head == nullptr || head->next == nullptr) {
+            return head;
+        }
+
+        // 1. List ko do hisson mein divide karo
+        ListNode* mid = getMid(head);
+        ListNode* left = head;
+        ListNode* right = mid->next;
+        mid->next = nullptr; // Dono halves ko aapas mein cut (disconnect) kiya
+
+        // 2. Recursively dono halves ko sort karo
+        left = sortList(left);
+        right = sortList(right);
+
+        // 3. Sorted halves ko merge karo
+        return merge(left, right);
+    }
+};
