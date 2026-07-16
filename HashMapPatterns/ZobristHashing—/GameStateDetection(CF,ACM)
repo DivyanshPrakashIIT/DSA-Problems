@@ -1,0 +1,125 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <random>
+#include <chrono>
+
+using namespace std;
+
+// High-performance custom hash function for unordered_map to prevent anti-hash tests on Codeforces
+struct CustomHash {
+    static uint64_t splitmix64(uint64_t x) {
+        // High-quality avalanche mixer for bits distribution
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+// Generalized Game State Detection Engine
+class GameStateManager {
+private:
+    // Zobrist keys matrix layout: [Grid_Cell_Index][Possible_Piece/State_Values]
+    vector<vector<uint64_t>> zobrist_table;
+    
+    // Fast Game State Cache (Transposition Table)
+    // Key: 64-bit Zobrist Hash, Value: Game Evaluation outcome
+    unordered_map<uint64_t, int, CustomHash> state_cache;
+    
+    uint64_t current_state_hash;
+
+public:
+    void initGameStateEngine(int total_cells, int state_varieties) {
+        // Pure high-quality random engine using mt19937_64
+        mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+        
+        zobrist_table.assign(total_cells, vector<uint64_t>(state_varieties));
+        for (int i = 0; i < total_cells; ++i) {
+            for (int j = 0; j < state_varieties; ++j) {
+                zobrist_table[i][j] = rng();
+            }
+        }
+        
+        current_state_hash = 0ULL;
+        state_cache.clear();
+    }
+
+    // Computes initial layout completely from scratch: O(Total_Cells)
+    uint64_t computeInitialHash(const vector<int>& initial_board) {
+        current_state_hash = 0ULL;
+        for (int cell = 0; cell < initial_board.size(); ++cell) {
+            int state_val = initial_board[cell];
+            current_state_hash ^= zobrist_table[cell][state_val];
+        }
+        return current_state_hash;
+    }
+
+    // --- INCREMENTAL TRANSITION DETECTION: O(1) ---
+    // Updates the global hash matrix dynamically without re-scanning the board state
+    void updateCellState(int cell_idx, int old_val, int new_val) {
+        // 1. Remove the old configuration signature from the hash
+        current_state_hash ^= zobrist_table[cell_idx][old_val];
+        
+        // 2. Add the incoming configuration signature into the hash
+        current_state_hash ^= zobrist_table[cell_idx][new_val];
+    }
+
+    uint64_t getCurrentHash() const {
+        return current_state_hash;
+    }
+
+    // Lookup functions to verify if the state space has been analyzed before
+    bool isVisited(uint64_t hash_key) {
+        return state_cache.find(hash_key) != state_cache.end();
+    }
+
+    void cacheState(uint64_t hash_key, int evaluation_score) {
+        state_cache[hash_key] = evaluation_score;
+    }
+
+    int getCachedValue(uint64_t hash_key) {
+        return state_cache[hash_key];
+    }
+};
+
+int main() {
+    // Optimize standard I/O operations for CP contests
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    GameStateManager engine;
+    
+    // Example: A game grid with 9 cells (like a 3x3 puzzle board) 
+    // where each cell can hold values from 0 to 5.
+    int total_cells = 9;
+    int state_varieties = 6;
+    engine.initGameStateEngine(total_cells, state_varieties);
+
+    // Initial mock state array setup
+    vector<int> initial_board = {1, 2, 0, 4, 3, 5, 2, 1, 0};
+    uint64_t hash_v1 = engine.computeInitialHash(initial_board);
+    
+    cout << "Initial Board Layout Hash: " << hash_v1 << "\n";
+
+    // Scenario: Move made, element at cell index 2 changed from 0 to 3
+    engine.updateCellState(2, 0, 3);
+    uint64_t hash_v2 = engine.getCurrentHash();
+    
+    cout << "Hash After Dynamic Move Trimming: " << hash_v2 << "\n";
+
+    // Scenario: Undo/Revert the exact move back
+    engine.updateCellState(2, 3, 0);
+    uint64_t hash_v3 = engine.getCurrentHash();
+    
+    if (hash_v1 == hash_v3) {
+        cout << "State Detection Verification Successful: State recovered cleanly via O(1) XOR adjustments!\n";
+    }
+
+    return 0;
+}
