@@ -1,0 +1,33 @@
+class Solution {
+public:
+    ListNode* reverseBetween(ListNode* head, int left, int right) {
+        if (head == nullptr || left == right) return head;
+        
+        // Dummy node use karna hamesha safe hota hai (agar left = 1 ho toh)
+        ListNode* dummy = new ListNode(0);
+        dummy->next = head;
+        
+        ListNode* prev = dummy;
+        
+        // 1. prev ko left se thik pehle waale node par le jao
+        for (int i = 0; i < left - 1; i++) {
+            prev = prev->next;
+        }
+        
+        // curr hamesha usi node par rahega jo shuruat mein left par tha
+        ListNode* curr = prev->next;
+        
+        // 2. Loop chalega exactly (right - left) baar
+        for (int i = 0; i < right - left; i++) {
+            ListNode* temp = curr->next; // Jis node ko aage lana hai use pakda
+            
+            curr->next = temp->next;     // curr ko temp ke aage waale se connect kiya
+            temp->next = prev->next;     // temp ko reversed part ke head se connect kiya
+            prev->next = temp;           // prev ko temp se connect kiya
+        }
+        
+        ListNode* newHead = dummy->next;
+        delete dummy; // Memory clean up
+        return newHead;
+    }
+};
