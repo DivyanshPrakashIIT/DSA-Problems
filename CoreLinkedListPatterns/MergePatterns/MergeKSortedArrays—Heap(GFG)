@@ -1,0 +1,51 @@
+#include <vector>
+#include <queue>
+using namespace std;
+
+// Custom struct taaki pointers aur indexes ka track aasani se rahe
+struct HeapNode {
+    int val;   // Element ki value
+    int row;   // Kaun se array (row) se hai
+    int col;   // Us array mein kaun sa index (column) hai
+
+    // Min-heap ke liye '<' operator ko override kiya (taaki smallest hamesha top par rahe)
+    bool operator>(const HeapNode& other) const {
+        return val > other.val;
+    }
+};
+
+class Solution {
+public:
+    // Function to merge k sorted arrays.
+    vector<int> mergeKArrays(vector<vector<int>> arr, int K) {
+        vector<int> result;
+        
+        // Min-Heap banaya
+        priority_queue<HeapNode, vector<HeapNode>, greater<HeapNode>> minHeap;
+
+        // 1. Sabhi K arrays ke pehle elements ko heap mein daalo
+        for (int i = 0; i < K; i++) {
+            if (!arr[i].empty()) {
+                minHeap.push({arr[i][0], i, 0});
+            }
+        }
+
+        // 2. Process elements one by one
+        while (!minHeap.empty()) {
+            HeapNode curr = minHeap.top();
+            minHeap.pop();
+
+            // Sabse chota element output result mein daal diya
+            result.push_back(curr.val);
+
+            // Agar usi array (row) mein aage aur elements bache hain
+            int nextCol = curr.col + 1;
+            if (nextCol < arr[curr.row].size()) {
+                // Uske immediate agle element ko heap mein push karo
+                minHeap.push({arr[curr.row][nextCol], curr.row, nextCol});
+            }
+        }
+
+        return result;
+    }
+};
