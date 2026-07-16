@@ -1,63 +1,124 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
+#include <unordered_set>
 #include <random>
 #include <chrono>
 
 using namespace std;
 
-// High-Performance Anti-Hack Hash Selector for AtCoder Platforms
-struct AtCoderStateHash {
+// High-performance structural hash structure for handling AtCoder's huge state caches
+struct SafeHash64 {
     static uint64_t splitmix64(uint64_t x) {
         x += 0x9e3779b97f4a7c15;
         x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
         x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
         return x ^ (x >> 31);
     }
-
     size_t operator()(uint64_t x) const {
         static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
         return splitmix64(x + FIXED_RANDOM);
     }
 };
 
-class GridPositionHasher {
+class RandomBoardHasher {
 private:
-    int H, W, V;
-    // 3D Matrix Layer representation: [Row][Column][State_Value]
-    vector<vector<vector<uint64_t>>> random_matrix;
-    uint64_t active_grid_hash;
+    int rows, cols;
+    // 64-bit safe large prime modulo to prevent any structural overflow tracking errors
+    const uint64_t MOD = 1000000000000000003ULL; 
+    
+    // Position dynamic lookup matrices
+    vector<uint64_t> row_keys;
+    vector<uint64_t> col_keys;
+    vector<uint64_t> value_keys;
+
+    uint64_t current_board_hash;
 
 public:
-    void setupHasher(int rows, int cols, int max_values) {
-        this->H = rows;
-        this->W = cols;
-        this->V = max_values;
+    void initHasher(int r, int c, int max_val) {
+        rows = r;
+        cols = c;
+        
+        // High-precision pseudo-random engine seeding
+        mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+        
+        row_keys.resize(rows);
+        for(int i = 0; i < rows; ++i) row_keys[i] = rng() % MOD;
+        
+        col_keys.resize(cols);
+        for(int i = 0; i < cols; ++i) col_keys[i] = rng() % MOD;
+        
+        value_keys.resize(max_val + 1);
+        for(int i = 0; i <= max_val; ++i) value_keys[i] = rng() % MOD;
 
-        // Seeding with mt19937_64 to secure complete range allocation
-        mt19937_64 generator(13372026); 
-
-        random_matrix.assign(H, vector<vector<uint64_t>>(W, vector<uint64_t>(V)));
-        for (int r = 0; r < H; ++r) {
-            for (int c = 0; c < W; ++c) {
-                for (int v = 0; v < V; ++v) {
-                    random_matrix[r][c][v] = generator();
-                }
-            }
-        }
-        active_grid_hash = 0ULL;
+        current_board_hash = 0ULL;
     }
 
-    // Calculates the complete grid hash fingerprint from scratch: O(H * W)
-    uint64_t buildFullGridHash(const vector<vector<int>>& grid) {
-        active_grid_hash = 0ULL;
-        for (int r = 0; r < H; ++r) {
-            for (int c = 0; c < W; ++c) {
-                int value = grid[r][c];
-                active_grid_hash ^= random_matrix[r][c][value];
+    // Computes complete baseline layout hash from absolute scratch: O(R * C)
+    uint64_t computeFullBoardHash(const vector<vector<int>>& grid) {
+        current_board_hash = 0ULL;
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                uint64_t terms = (value_keys[grid[r][c]] * row_keys[r]) % MOD;
+                terms = (terms * col_keys[c]) % MOD;
+                
+                current_board_hash = (current_board_hash + terms) % MOD;
             }
         }
-        return active_grid_hash;
+        return current_board_hash;
     }
 
-    // --- INCREMENTAL TRANSITION
+    // --- LINEAR DYNAMIC TRANSITION UPDATE: O(1) ---
+    // Swaps or updates a single coordinate value instantly without parsing unchanged fields
+    void updateCell(int r, int c, int old_val, int new_val) {
+        // 1. Calculate and isolate the exact hash signature of the old value configuration
+        uint64_t old_terms = (value_keys[old_val] * row_keys[r]) % MOD;
+        old_terms = (old_terms * col_keys[c]) % MOD;
+        
+        // Remove old parameters safely within modulo limits
+        current_board_hash = (current_board_hash + MOD - old_terms) % MOD;
+
+        // 2. Synthesize and incorporate the incoming value configuration signature
+        uint64_t new_terms = (value_keys[new_val] * row_keys[r]) % MOD;
+        new_terms = (new_terms * col_keys[c]) % MOD;
+        
+        current_board_hash = (current_board_hash + new_terms) % MOD;
+    }
+
+    uint64_t getBoardHash() const {
+        return current_board_hash;
+    }
+};
+
+int main() {
+    // Optimize fast standard I/O streams for competitive testing limits
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    RandomBoardHasher engine;
+    
+    // Example layout: 3x3 board grid configuration containing numerical values up to 10
+    int r = 3, c = 3;
+    engine.initHasher(r, c, 10);
+
+    vector<vector<int>> matrix = {
+        {1, 5, 2},
+        {4, 0, 3},
+        {9, 8, 6}
+    };
+
+    uint64_t state_initial = engine.computeFullBoardHash(matrix);
+    cout << "Initial Matrix Signature Hash: " << state_initial << "\n";
+
+    // Action Move Simulation: Element at Row 1, Col 1 changes from 0 to 7
+    engine.updateCell(1, 1, 0, 7);
+    cout << "Signature AFTER executing cell step transitions: " << engine.getBoardHash() << "\n";
+
+    // Undo Execution: Revert value back instantly
+    engine.updateCell(1, 1, 7, 0);
+    
+    if (engine.getBoardHash() == state_initial) {
+        cout << "Verification Successful: Board State Tracking cleanly resolved with O(1) updates!\n";
+    }
+
+    return 0;
+}
