@@ -1,0 +1,105 @@
+#include <unordered_map>
+#include <iostream>
+
+using namespace std;
+
+class LRUCache {
+private:
+    // Structure for the Doubly Linked List Node
+    struct Node {
+        int key;
+        int value;
+        Node* prev;
+        Node* next;
+        Node(int k, int v) : key(k), value(v), prev(nullptr), next(nullptr) {}
+    };
+
+    int capacity;
+    unordered_map<int, Node*> cache_map;
+    
+    // Dummy pointers to avoid checking null conditions during node shifts
+    Node* head;
+    Node* tail;
+
+    // Helper: Adds a node right next to the dummy head (Marks it as Most Recently Used)
+    void addNodeToHead(Node* node) {
+        node->next = head->next;
+        node->prev = head;
+        head->next->prev = node;
+        head->next = node;
+    }
+
+    // Helper: Disconnects a node from its current position in the DLL
+    void removeNode(Node* node) {
+        Node* prevNode = node->prev;
+        Node* nextNode = node->next;
+        prevNode->next = nextNode;
+        nextNode->prev = prevNode;
+    }
+
+    // Helper: Combines removal and promotion to signify an access operation
+    void moveToHead(Node* node) {
+        removeNode(node);
+        addNodeToHead(node);
+    }
+
+public:
+    LRUCache(int capacity) {
+        this->capacity = capacity;
+        
+        // Initialize dummy boundaries
+        head = new Node(-1, -1);
+        tail = new Node(-1, -1);
+        head->next = tail;
+        tail->prev = head;
+    }
+    
+    int get(int key) {
+        // If key doesn't exist, return -1
+        if (cache_map.find(key) == cache_map.end()) {
+            return -1;
+        }
+        
+        // Retrieve node pointer, promote it to head, and return its value
+        Node* targetNode = cache_map[key];
+        moveToHead(targetNode);
+        return targetNode->value;
+    }
+    
+    void put(int key, int value) {
+        // Case 1: Key already exists in the cache
+        if (cache_map.find(key) != cache_map.end()) {
+            Node* existingNode = cache_map[key];
+            existingNode->value = value; // Update the value
+            moveToHead(existingNode);    // Promote to recent
+            return;
+        }
+        
+        // Case 2: Cache is full, eviction required
+        if (cache_map.size() == capacity) {
+            // Target the node right before the dummy tail (Least Recently Used)
+            Node* lruNode = tail->prev;
+            
+            // Wipe from tracking map and list structure
+            cache_map.erase(lruNode->key);
+            removeNode(lruNode);
+            
+            delete lruNode; // Free memory allocation
+        }
+        
+        // Create and register the incoming new node entry
+        Node* newNode = new Node(key, value);
+        cache_map[key] = newNode;
+        addNodeToHead(newNode);
+    }
+
+    // Destructor to clean up memory layout (Good practice in C++)
+    ~LRUCache() {
+        Node* curr = head;
+        while (curr) {
+            Node* next = curr->next;
+            delete curr;
+            curr = next;
+        }
+    }
+};
