@@ -1,0 +1,121 @@
+#include <unordered_map>
+
+using namespace std;
+
+class LFUCache {
+private:
+    struct Node {
+        int key, val, freq;
+        Node* prev;
+        Node* next;
+        Node(int k, int v) : key(k), val(v), freq(1), prev(nullptr), next(nullptr) {}
+    };
+
+    // Custom Doubly Linked List implementation for each frequency bucket
+    struct DoublyLinkedList {
+        Node* head;
+        Node* tail;
+        int size;
+        
+        DoublyLinkedList() {
+            head = new Node(-1, -1);
+            tail = new Node(-1, -1);
+            head->next = tail;
+            tail->prev = head;
+            size = 0;
+        }
+
+        void addNodeToHead(Node* node) {
+            node->next = head->next;
+            node->prev = head;
+            head->next->prev = node;
+            head->next = node;
+            size++;
+        }
+
+        void removeNode(Node* node) {
+            Node* prevNode = node->prev;
+            Node* nextNode = node->next;
+            prevNode->next = nextNode;
+            nextNode->prev = prevNode;
+            size--;
+        }
+
+        bool isEmpty() { return size == 0; }
+    };
+
+    int capacity;
+    int min_frequency;
+    unordered_map<int, Node*> key_to_node;
+    unordered_map<int, DoublyLinkedList*> freq_to_dll;
+
+    // Core helper to promote a node's frequency layer
+    void updateFrequency(Node* node) {
+        int old_freq = node->freq;
+        freq_to_dll[old_freq]->removeNode(node);
+
+        // Update min_frequency if the current lowest frequency list becomes empty
+        if (old_freq == min_frequency && freq_to_dll[old_freq]->isEmpty()) {
+            min_frequency++;
+        }
+
+        node->freq++;
+        int new_freq = node->freq;
+        
+        // If the list for the new frequency doesn't exist, create it
+        if (freq_to_dll.find(new_freq) == freq_to_dll.end()) {
+            freq_to_dll[new_freq] = new DoublyLinkedList();
+        }
+        
+        freq_to_dll[new_freq]->addNodeToHead(node);
+    }
+
+public:
+    LFUCache(int capacity) {
+        this->capacity = capacity;
+        this->min_frequency = 0;
+        key_to_node.clear();
+        freq_to_dll.clear();
+    }
+    
+    int get(int key) {
+        if (capacity == 0 || key_to_node.find(key) == key_to_node.end()) {
+            return -1;
+        }
+        Node* node = key_to_node[key];
+        updateFrequency(node);
+        return node->val;
+    }
+    
+    void put(int key, int value) {
+        if (capacity == 0) return;
+
+        // Case 1: Key already exists
+        if (key_to_node.find(key) != key_to_node.end()) {
+            Node* node = key_to_node[key];
+            node->val = value;
+            updateFrequency(node);
+            return;
+        }
+
+        // Case 2: Cache is full, evict the LFU (and LRU tie-breaker) element
+        if (key_to_node.size() == capacity) {
+            DoublyLinkedList* min_dll = freq_to_dll[min_frequency];
+            Node* lru_node = min_dll->tail->prev; // Node right before dummy tail
+            
+            key_to_node.erase(lru_node->key);
+            min_dll->removeNode(lru_node);
+            delete lru_node;
+        }
+
+        // Insert new element
+        Node* new_node = new Node(key, value);
+        key_to_node[key] = new_node;
+        
+        min_frequency = 1; // New element always has frequency 1
+        if (freq_to_dll.find(1) == freq_to_dll.end()) {
+            freq_to_dll[1] = new DoublyLinkedList();
+        }
+        freq_to_dll[1]->addNodeToHead(new_node);
+    }
+};
