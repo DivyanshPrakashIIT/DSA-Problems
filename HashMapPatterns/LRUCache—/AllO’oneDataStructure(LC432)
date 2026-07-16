@@ -1,0 +1,131 @@
+#include <unordered_map>
+#include <unordered_set>
+#include <string>
+
+using namespace std;
+
+class AllOne {
+private:
+    // Structure for Bucket Node in the Doubly Linked List
+    struct Node {
+        int count;
+        unordered_set<string> keys;
+        Node* prev;
+        Node* next;
+        Node(int c) : count(c), prev(nullptr), next(nullptr) {}
+    };
+
+    // Global trackers for boundaries and hash mapping
+    Node* head;
+    Node* tail;
+    unordered_map<string, Node*> key_to_node;
+
+    // Helper: Inserts a new node right after an existing node
+    Node* insertNodeAfter(Node* prev_node, int count) {
+        Node* new_node = new Node(count);
+        new_node->next = prev_node->next;
+        new_node->prev = prev_node;
+        prev_node->next->prev = new_node;
+        prev_node->next = new_node;
+        return new_node;
+    }
+
+    // Helper: Removes a node from the DLL and frees memory safely
+    void removeNode(Node* node) {
+        node->prev->next = node->next;
+        node->next->prev = node->prev;
+        delete node;
+    }
+
+public:
+    AllOne() {
+        // Initialize dummy head and tail boundaries to keep references safe
+        head = new Node(0);
+        tail = new Node(0);
+        head->next = tail;
+        tail->prev = head;
+    }
+    
+    void inc(string key) {
+        // Case 1: Key does not exist in the structure
+        if (key_to_node.find(key) == key_to_node.end()) {
+            // Check if a bucket with count 1 exists right after head boundary
+            if (head->next == tail || head->next->count > 1) {
+                insertNodeAfter(head, 1);
+            }
+            head->next->keys.insert(key);
+            key_to_node[key] = head->next;
+        } 
+        // Case 2: Key already exists, promote its position
+        else {
+            Node* curr_node = key_to_node[key];
+            int next_count = curr_node->count + 1;
+            
+            // Check if a bucket with next_count exists right ahead
+            if (curr_node->next == tail || curr_node->next->count > next_count) {
+                insertNodeAfter(curr_node, next_count);
+            }
+            
+            Node* next_node = curr_node->next;
+            next_node->keys.insert(key);
+            key_to_node[key] = next_node;
+            
+            // Remove from the old bucket layer
+            curr_node->keys.erase(key);
+            if (curr_node->keys.empty()) {
+                removeNode(curr_node);
+            }
+        }
+    }
+    
+    void dec(string key) {
+        // If key doesn't exist, ignore the request
+        if (key_to_node.find(key) == key_to_node.end()) return;
+        
+        Node* curr_node = key_to_node[key];
+        curr_node->keys.erase(key);
+        
+        int prev_count = curr_node->count - 1;
+        
+        if (prev_count > 0) {
+            // Check if a bucket with prev_count exists right behind
+            if (curr_node->prev == head || curr_node->prev->count < prev_count) {
+                insertNodeAfter(curr_node->prev, prev_count);
+            }
+            Node* prev_node = curr_node->prev;
+            prev_node->keys.insert(key);
+            key_to_node[key] = prev_node;
+        } else {
+            // If count drops to 0, completely erase from the hash map tracking
+            key_to_node.erase(key);
+        }
+        
+        // Clean up the current bucket if it becomes completely empty
+        if (curr_node->keys.empty()) {
+            removeNode(curr_node);
+        }
+    }
+    
+    string getMaxKey() {
+        // If the list is empty (only dummy nodes present)
+        if (tail->prev == head) return "";
+        // Return any element from the set inside the maximum bucket node boundary
+        return *(tail->prev->keys.begin());
+    }
+    
+    string getMinKey() {
+        // If the list is empty (only dummy nodes present)
+        if (head->next == tail) return "";
+        // Return any element from the set inside the minimum bucket node boundary
+        return *(head->next->keys.begin());
+    }
+};
+
+/**
+ * Your AllOne object will be instantiated and called as such:
+ * AllOne* obj = new AllOne();
+ * obj->inc(key);
+ * obj->dec(key);
+ * string param_3 = obj->getMaxKey();
+ * string param_4 = obj->getMinKey();
+ */
