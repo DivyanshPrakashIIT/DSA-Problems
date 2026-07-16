@@ -1,0 +1,43 @@
+class Solution {
+public:
+    void reorderList(ListNode* head) {
+        if (head == nullptr || head->next == nullptr) return;
+
+        // STEP 1: Find the middle of the linked list
+        ListNode* slow = head;
+        ListNode* fast = head;
+        while (fast != nullptr && fast->next != nullptr) {
+            slow = slow->next;
+            fast = fast->next->next;
+        }
+
+        // STEP 2: Reverse the second half (starting from slow->next)
+        ListNode* prev = nullptr;
+        ListNode* curr = slow->next;
+        slow->next = nullptr; // First half ko terminate karo
+
+        while (curr != nullptr) {
+            ListNode* nextNode = curr->next;
+            curr->next = prev;
+            prev = curr;
+            curr = nextNode;
+        }
+
+        // STEP 3: Alternate Merge (p1 shuru hoga head se, p2 shuru hoga prev se)
+        ListNode* p1 = head;
+        ListNode* p2 = prev; // Reversed second half ka head
+
+        while (p2 != nullptr) {
+            ListNode* temp1 = p1->next;
+            ListNode* temp2 = p2->next;
+
+            // Connection change karo
+            p1->next = p2;
+            p2->next = temp1;
+
+            // Pointers ko aage badhao
+            p1 = temp1;
+            p2 = temp2;
+        }
+    }
+};
