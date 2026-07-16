@@ -1,0 +1,30 @@
+class Solution {
+public:
+    ListNode* swapPairs(ListNode* head) {
+        // Agar list khali hai ya sirf ek hi node hai, toh swap karne ki zaroorat nahi
+        if (head == nullptr || head->next == nullptr) return head;
+        
+        ListNode* dummy = new ListNode(0);
+        dummy->next = head;
+        
+        ListNode* prev = dummy;
+        
+        // Loop tab tak chalega jab tak aage kam se kam DO nodes bache hon
+        while (prev->next != nullptr && prev->next->next != nullptr) {
+            ListNode* first = prev->next;
+            ListNode* second = prev->next->next;
+            
+            // Links badalna shuru karte hain
+            first->next = second->next;   // 1 points to 3
+            second->next = first;         // 2 points to 1
+            prev->next = second;          // prev points to 2
+            
+            // Agle pair ke liye prev ko shift karo (first ab tail ban gaya hai is pair ka)
+            prev = first;
+        }
+        
+        ListNode* newHead = dummy->next;
+        delete dummy; // Memory clean up
+        return newHead;
+    }
+};
