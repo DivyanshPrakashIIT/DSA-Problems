@@ -1,0 +1,33 @@
+class Solution {
+public:
+    ListNode* deleteDuplicates(ListNode* head) {
+        // Edge case: Agar list khali hai ya usme sirf ek hi node hai
+        if (head == nullptr || head->next == nullptr) {
+            return head;
+        }
+        
+        ListNode* curr = head;
+        
+        // Loop tab tak chalega jab tak curr aur uska agla node dono valid hain
+        while (curr != nullptr && curr->next != nullptr) {
+            if (curr->val == curr->next->val) {
+                // Duplicate mila!
+                ListNode* duplicateNode = curr->next;
+                
+                // Connection badal kar duplicate ko bypass karo
+                curr->next = curr->next->next;
+                
+                // Memory clear karne ke liye duplicate node ko delete karo (Good practice)
+                delete duplicateNode; 
+                
+                // Note: Hum yahan 'curr = curr->next' nahi kar rahe hain kyunki 
+                // naye connected node ko bhi check karna zaroori hai.
+            } else {
+                // Agar duplicate nahi hai, toh aaram se ek kadam aage badho
+                curr = curr->next;
+            }
+        }
+        
+        return head;
+    }
+};
