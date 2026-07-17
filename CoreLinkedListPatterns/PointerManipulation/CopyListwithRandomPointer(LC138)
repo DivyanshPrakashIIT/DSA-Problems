@@ -1,0 +1,50 @@
+class Solution {
+public:
+    Node* copyRandomList(Node* head) {
+        if (head == NULL) return NULL;
+        
+        Node* curr = head;
+        
+        // --- STEP 1: Create Cloned Nodes and Interleave Them ---
+        while (curr != NULL) {
+            Node* nextNode = curr->next;
+            Node* cloneNode = new Node(curr->val);
+            
+            curr->next = cloneNode;
+            cloneNode->next = nextNode;
+            
+            curr = nextNode; // Move to next original node
+        }
+        
+        // --- STEP 2: Assign Random Pointers to Cloned Nodes ---
+        curr = head;
+        while (curr != NULL) {
+            if (curr->random != NULL) {
+                // clone's random = original's random ka next (jo ki uski copy hai)
+                curr->next->random = curr->random->next;
+            }
+            // Humesha do kadam aage badhna hai (clone ko skip karke next original pe)
+            curr = curr->next->next; 
+        }
+        
+        // --- STEP 3: Separate Original and Cloned Lists ---
+        curr = head;
+        Node* dummy = new Node(0); // Dummy node to easily build the clone list
+        Node* cloneCurr = dummy;
+        
+        while (curr != NULL) {
+            Node* nextOriginal = curr->next->next;
+            
+            // Extract the clone node
+            cloneCurr->next = curr->next;
+            cloneCurr = cloneCurr->next;
+            
+            // Restore the original list pointer
+            curr->next = nextOriginal;
+            
+            curr = nextOriginal;
+        }
+        
+        return dummy->next; // Returns the head of the deep copied list
+    }
+};
