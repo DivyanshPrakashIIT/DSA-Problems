@@ -1,0 +1,67 @@
+/*
+// Definition for a Node.
+class Node {
+public:
+    int val;
+    Node* next;
+
+    Node() {}
+
+    Node(int _val) {
+        val = _val;
+        next = NULL;
+    }
+
+    Node(int _val, Node* _next) {
+        val = _val;
+        next = _next;
+    }
+};
+*/
+
+class Solution {
+public:
+    Node* insert(Node* head, int insertVal) {
+        // Edge Case 1: Agar list ekdam khali hai
+        if (head == nullptr) {
+            Node* newNode = new Node(insertVal);
+            newNode->next = newNode; // Apne aap se connect karke circular banaya
+            return newNode;
+        }
+        
+        Node* curr = head;
+        Node* nextNode = head->next;
+        bool toInsert = false;
+        
+        while (true) {
+            // Case 1: Normal beech ka element (e.g., 1 <= 2 <= 3)
+            if (curr->val <= insertVal && insertVal <= nextNode->val) {
+                toInsert = true;
+            }
+            // Case 2: Peak point (Tail aur Head ka junction, e.g., 4 -> 1)
+            else if (curr->val > nextNode->val) {
+                // Agar insertVal sabse badi hai, ya sabse choti hai
+                if (insertVal >= curr->val || insertVal <= nextNode->val) {
+                    toInsert = true;
+                }
+            }
+            
+            // Agar insertion point mil gaya, toh tod do loop ko
+            if (toInsert) {
+                curr->next = new Node(insertVal, nextNode);
+                return head;
+            }
+            
+            // Move pointers forward
+            curr = curr->next;
+            nextNode = nextNode->next;
+            
+            // Case 3: Poora round trip maar liya par koi perfect place nahi mila
+            // (Yaani saare nodes duplicate hain ya single node list thi)
+            if (curr == head) {
+                curr->next = new Node(insertVal, nextNode);
+                return head;
+            }
+        }
+    }
+};
