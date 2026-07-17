@@ -1,0 +1,41 @@
+#include <vector>
+#include <stack>
+#include <unordered_map>
+
+using namespace std;
+
+class Solution {
+public:
+    vector<int> nextGreaterElement(vector<int>& nums1, vector<int>& nums2) {
+        stack<int> st;
+        unordered_map<int, int> next_greater_map;
+        
+        // Step 1: nums2 par piche se Monotonic Stack lagao
+        for (int i = nums2.size() - 1; i >= 0; i--) {
+            int curr = nums2[i];
+            
+            // Stack se saare chhote elements ko pop kar do
+            while (!st.empty() && st.top() <= curr) {
+                st.pop();
+            }
+            
+            // Map mein store karo: agar stack khali hai toh -1, nahi toh top element
+            if (st.empty()) {
+                next_greater_map[curr] = -1;
+            } else {
+                next_greater_map[curr] = st.top();
+            }
+            
+            // Current element ko stack mein push karo
+            st.push(curr);
+        }
+        
+        // Step 2: nums1 ke liye direct map se answers map out karo
+        vector<int> ans;
+        for (int num : nums1) {
+            ans.push_back(next_greater_map[num]);
+        }
+        
+        return ans;
+    }
+};
