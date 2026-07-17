@@ -1,0 +1,78 @@
+#include <iostream>
+
+using namespace std;
+
+// Node structure definition for Circular Linked List
+struct Node {
+    int data;
+    Node* next;
+    
+    Node(int val) {
+        data = val;
+        next = nullptr;
+    }
+};
+
+class JosephusSimulation {
+public:
+    int getSurvivor(int n, int k) {
+        // Edge case: Agar koi insaan hi na ho ya invalid input ho
+        if (n <= 0 || k <= 0) return -1;
+        
+        // --- STEP 1: Create Circular Linked List ---
+        Node* head = new Node(1);
+        Node* curr = head;
+        
+        // 2 se lekar N tak ke logo ke liye nodes banake link karo
+        for (int i = 2; i <= n; i++) {
+            curr->next = new Node(i);
+            curr = curr->next;
+        }
+        curr->next = head; // Last node ko Head se jod kar CIRCULAR banaya
+        
+        // --- STEP 2: Simulation of Elimination ---
+        // Jab tak list mein sirf EK node na bache (yaani node khud ko point na karne lage)
+        while (curr->next != curr) {
+            
+            // Hamein K-th node delete karna hai.
+            // Pointer manipulation ke liye hume delete hone wale node ke physical THEEK PICHE (K-1 steps) khade hona padega.
+            for (int count = 1; count < k; count++) {
+                curr = curr->next;
+            }
+            
+            // Ab curr pointer K-1 position par hai.
+            // 'toDelete' wo node hai jise circle se hatana hai (K-th node)
+            Node* toDelete = curr->next;
+            
+            // POINTER MANIPULATION: K-1 node ko bypass karke direct K+1 se jodo
+            curr->next = toDelete->next;
+            
+            // Memory leak se bachne ke liye deleted node ki memory free karo
+            delete toDelete;
+            
+            // Countdown ab agle bache hue node se shuru hoga, 
+            // jo ki pointer rearrangement ke baad automatic 'curr' ban chuka hai.
+        }
+        
+        // --- STEP 3: Return Winner and Free Last Node ---
+        int survivor = curr->data;
+        delete curr; // Pura khel khatam, last bacha hua element bhi clear kiya
+        
+        return survivor;
+    }
+};
+
+int main() {
+    int n, k;
+    JosephusSimulation solver;
+    
+    cout << "Enter total number of people (N) and elimination step (K): " << endl;
+    // Standard competitive programming / console execution reading loop
+    while (cin >> n >> k) {
+        int winner = solver.getSurvivor(n, k);
+        cout << "The survivor (Winner) is person number: " << winner << "\n\n";
+        cout << "Enter next N and K (or press Ctrl+C to exit): " << endl;
+    }
+    
+    return 0;
+}
