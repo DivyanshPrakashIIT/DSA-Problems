@@ -1,0 +1,51 @@
+/*
+// Definition for a Node.
+class Node {
+public:
+    int val;
+    Node* prev;
+    Node* next;
+    Node* child;
+};
+*/
+
+class Solution {
+public:
+    Node* flatten(Node* head) {
+        if (!head) return NULL;
+        
+        Node* curr = head;
+        
+        while (curr != NULL) {
+            // Agar node ka child milta hai
+            if (curr->child != NULL) {
+                
+                Node* nextNode = curr->next; // Purane next ka reference safe rakho
+                
+                // 1. Find the tail of the child list
+                Node* childTail = curr->child;
+                while (childTail->next != NULL) {
+                    childTail = childTail->next;
+                }
+                
+                // 2. Connect curr to the head of child list
+                curr->next = curr->child;
+                curr->child->prev = curr;
+                
+                // 3. Connect child list tail to the old nextNode
+                if (nextNode != NULL) {
+                    childTail->next = nextNode;
+                    nextNode->prev = childTail;
+                }
+                
+                // 4. Important: child pointer ko NULL set karo
+                curr->child = NULL;
+            }
+            
+            // Ek kadam aage badho
+            curr = curr->next;
+        }
+        
+        return head;
+    }
+};
