@@ -1,0 +1,43 @@
+class Solution {
+public:
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+        // Ek dummy head node banate hain naye list ke liye
+        ListNode* dummyHead = new ListNode(0);
+        ListNode* curr = dummyHead; // Yeh pointer naye nodes ko link karega
+        
+        int carry = 0;
+        
+        // Loop tab tak chalega jab tak dono me se koi ek list bachi ho, या carry bacha ho
+        while (l1 != nullptr || l2 != nullptr || carry != 0) {
+            int sum = carry; // Pehle carry ko sum mein add karo
+            
+            // Agar l1 valid hai, toh uski value sum mein add karo aur aage badho
+            if (l1 != nullptr) {
+                sum += l1->val;
+                l1 = l1->next;
+            }
+            
+            // Agar l2 valid hai, toh uski value sum mein add karo aur aage badho
+            if (l2 != nullptr) {
+                sum += l2->val;
+                l2 = l2->next;
+            }
+            
+            // Naya carry calculate karo (e.g., 14 / 10 = 1)
+            carry = sum / 10;
+            
+            // Naye node ke liye value nikalte hain (e.g., 14 % 10 = 4)
+            ListNode* newNode = new ListNode(sum % 10);
+            
+            // Pointers link karte hain
+            curr->next = newNode;
+            curr = curr->next;
+        }
+        
+        // Asal head dummy ke agla wala node hai
+        ListNode* resultHead = dummyHead->next;
+        delete dummyHead; // Dummy node ki memory free kar di
+        
+        return resultHead;
+    }
+};
