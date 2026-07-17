@@ -1,0 +1,117 @@
+class Skiplist {
+private:
+    struct Node {
+        int val;
+        // forward[i] batata hai ki level i par agla node kaunsa hai
+        vector<Node*> forward; 
+        
+        Node(int v, int level) : val(v), forward(level, nullptr) {}
+    };
+
+    Node* head;
+    int maxLevel;
+    float p;
+    int currentLevel;
+
+    // Helper: Coin flip algorithm to determine node level
+    int randomLevel() {
+        int lvl = 1;
+        // 50% probability ke sath level badhao (Max level limit 16 rakh rahe hain)
+        while ((rand() & 1) && lvl < maxLevel) {
+            lvl++;
+        }
+        return lvl;
+    }
+
+public:
+    Skiplist() {
+        maxLevel = 16; // 2^16 tak ke elements ke liye kafi hai
+        p = 0.5;
+        currentLevel = 1;
+        // Head node dummy hota hai jiske paas saare levels ke pointers hote hain
+        head = new Node(-1, maxLevel); 
+    }
+    
+    bool search(int target) {
+        Node* curr = head;
+        // Top level se shuru karke niche tak jao
+        for (int i = currentLevel - 1; i >= 0; i--) {
+            while (curr->forward[i] != nullptr && curr->forward[i]->val < target) {
+                curr = curr->forward[i];
+            }
+        }
+        // Bottom level par agle node ko check karo
+        curr = curr->forward[0];
+        return curr != nullptr && curr->val == target;
+    }
+    
+    void add(int num) {
+        // update array har level par insertion point ke piche wale node ko track karega
+        vector<Node*> update(maxLevel, nullptr);
+        Node* curr = head;
+        
+        for (int i = currentLevel - 1; i >= 0; i--) {
+            while (curr->forward[i] != nullptr && curr->forward[i]->val < num) {
+                curr = curr->forward[i];
+            }
+            update[i] = curr;
+        }
+        
+        // Naye node ke liye random level nikalte hain
+        int lvl = randomLevel();
+        
+        // Agar naya level current max se bada hai, toh head ko update point banao
+        if (lvl > currentLevel) {
+            for (int i = currentLevel; i < lvl; i++) {
+                update[i] = head;
+            }
+            currentLevel = lvl;
+        }
+        
+        // Naya node create karo
+        Node* newNode = new Node(num, lvl);
+        
+        // --- POINTER MANIPULATION (Like Singly Linked List for each level) ---
+        for (int i = 0; i < lvl; i++) {
+            newNode->forward[i] = update[i]->forward[i];
+            update[i]->forward[i] = newNode;
+        }
+    }
+    
+    bool erase(int num) {
+        vector<Node*> update(maxLevel, nullptr);
+        Node* curr = head;
+        
+        // Piche wale nodes ka track rakho
+        for (int i = currentLevel - 1; i >= 0; i--) {
+            while (curr->forward[i] != nullptr && curr->forward[i]->val < num) {
+                curr = curr->forward[i];
+            }
+            update[i] = curr;
+        }
+        
+        // Target node ko target karo
+        curr = curr->forward[0];
+        
+        // Agar node mil gaya, toh saare levels se iska pointer bypass kar do
+        if (curr != nullptr && curr->val == num) {
+            for (int i = 0; i < currentLevel; i++) {
+                // Agar is level par agla node hamara target nahi hai, toh aage ke levels par bhi nahi hoga
+                if (update[i]->forward[i] != curr) break;
+                
+                // Bypass the node
+                update[i]->forward[i] = curr->forward[i];
+            }
+            
+            delete curr; // Memory clear ki
+            
+            // Agar koi khali level bach gayi hai, toh current level ghatao
+            while (currentLevel > 1 && head->forward[currentLevel - 1] == nullptr) {
+                currentLevel--;
+            }
+            return true;
+        }
+        
+        return false; // Element nahi mila
+    }
+};
