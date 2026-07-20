@@ -1,0 +1,51 @@
+#include <vector>
+#include <stack>
+
+class Solution {
+public:
+    int sumSubarrayMins(std::vector<int>& arr) {
+        int n = arr.size();
+        long long totalSum = 0;
+        int MOD = 1e9 + 7;
+        
+        // distance to Previous Less Element (PLE)
+        std::vector<int> left(n); 
+        // distance to Next Less or Equal Element (NLE)
+        std::vector<int> right(n); 
+        
+        std::stack<std::pair<int, int>> stLeft, stRight;
+        
+        // 1. Calculate left distances (PLE)
+        for (int i = 0; i < n; ++i) {
+            int count = 1;
+            // Strict inequality (>) to avoid duplicate counting
+            while (!stLeft.empty() && stLeft.top().first > arr[i]) {
+                count += stLeft.top().second;
+                stLeft.pop();
+            }
+            stLeft.push({arr[i], count});
+            left[i] = count;
+        }
+        
+        // 2. Calculate right distances (NLE)
+        for (int i = n - 1; i >= 0; --i) {
+            int count = 1;
+            // Non-strict inequality (>=) handles duplicates
+            while (!stRight.empty() && stRight.top().first >= arr[i]) {
+                count += stRight.top().second;
+                stRight.pop();
+            }
+            stRight.push({arr[i], count});
+            right[i] = count;
+        }
+        
+        // 3. Calculate total sum of contributions
+        for (int i = 0; i < n; ++i) {
+            long long subarrays = (long long)left[i] * right[i];
+            long long contribution = (subarrays % MOD) * arr[i] % MOD;
+            totalSum = (totalSum + contribution) % MOD;
+        }
+        
+        return totalSum;
+    }
+};
