@@ -1,0 +1,29 @@
+#include <vector>
+#include <queue>
+
+class Solution {
+public:
+    std::vector<std::vector<int>> kClosest(std::vector<std::vector<int>>& points, int k) {
+        // Max-Heap storing pairs of {distance_squared, index_in_points}
+        std::priority_queue<std::pair<int, int>> maxHeap;
+
+        for (int i = 0; i < points.size(); ++i) {
+            int distSq = points[i][0] * points[i][0] + points[i][1] * points[i][1];
+            maxHeap.push({distSq, i});
+
+            // Keep only the k closest points in the heap
+            if (maxHeap.size() > k) {
+                maxHeap.pop(); // Evict the point with the largest distance
+            }
+        }
+
+        std::vector<std::vector<int>> result;
+        while (!maxHeap.empty()) {
+            int idx = maxHeap.top().second;
+            maxHeap.pop();
+            result.push_back(points[idx]);
+        }
+
+        return result;
+    }
+};
