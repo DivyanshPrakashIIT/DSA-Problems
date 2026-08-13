@@ -1,0 +1,38 @@
+#include <vector>
+#include <queue>
+#include <climits>
+#include <algorithm>
+using namespace std;
+
+class Solution {
+public:
+    vector<int> smallestRange(vector<vector<int>>& nums) {
+        int k = nums.size();
+        priority_queue<vector<int>, vector<vector<int>>, greater<vector<int>>> minHeap;
+        int currentMax = INT_MIN;
+        for (int r = 0; r < k; r++) {
+            minHeap.push({nums[r][0], r, 0});
+            currentMax = max(currentMax, nums[r][0]);
+        }
+        int rangeStart = 0;
+        int rangeEnd = INT_MAX;
+        while (minHeap.size() == k) {
+            auto top = minHeap.top();
+            minHeap.pop();
+
+            int currentMin = top[0];
+            int r = top[1];
+            int c = top[2];
+            if (currentMax - currentMin < rangeEnd - rangeStart) {
+                rangeStart = currentMin;
+                rangeEnd = currentMax;
+            }
+            if (c + 1 < nums[r].size()) {
+                int nextVal = nums[r][c + 1];
+                minHeap.push({nextVal, r, c + 1});
+                currentMax = max(currentMax, nextVal);
+            }
+        }
+        return {rangeStart, rangeEnd};
+    }
+};
