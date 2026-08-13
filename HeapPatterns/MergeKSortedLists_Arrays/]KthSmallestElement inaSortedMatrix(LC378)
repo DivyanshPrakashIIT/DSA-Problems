@@ -1,0 +1,20 @@
+class Solution {
+public:
+    int kthSmallest(vector<vector<int>>& matrix, int k) {
+        priority_queue<vector<int>,vector<vector<int>>,greater<vector<int>>> pq;
+        int n = matrix.size();
+        for(int r = 0;r<n;r++){
+            pq.push({matrix[r][0],r,0});
+        }
+        for(int i = 0;i<k-1;i++){
+            auto top = pq.top();
+            pq.pop();
+            int r = top[1];
+            int c = top[2];
+            if(c+1<n){
+                pq.push({matrix[r][c+1],r,c+1});
+            }
+        }
+        return pq.top()[0];
+    }
+};
