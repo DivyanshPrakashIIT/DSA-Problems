@@ -1,0 +1,26 @@
+class Solution {
+public:
+    string frequencySort(string s) {
+        // Step 1: Count how many times each character appears
+        unordered_map<char, int> freq;
+        for (char c : s) {
+            freq[c]++;
+        }
+        priority_queue<pair<int, char>> pq;
+        for (auto it : freq) {
+            pq.push({it.second, it.first});
+        }
+        string ans = "";
+        while (!pq.empty()) {
+            int count = pq.top().first;
+            char c = pq.top().second;
+            pq.pop();
+            while (count > 0) {
+                ans += c;
+                count--;
+            }
+        }
+
+        return ans;
+    }
+};
