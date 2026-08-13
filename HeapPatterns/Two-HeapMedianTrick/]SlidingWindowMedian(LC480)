@@ -1,0 +1,109 @@
+#include <vector>
+#include <queue>
+#include <unordered_map>
+
+using namespace std;
+
+class Solution {
+private:
+    priority_queue<int> maxHeap;                            // Small half
+    priority_queue<int, vector<int>, greater<int>> minHeap; // Large half
+    unordered_map<int, int> delayed;                        // Tracks element deletion counts
+
+    int smallSize = 0; // Valid count in maxHeap
+    int largeSize = 0; // Valid count in minHeap
+
+    // Helper: Remove invalid elements sitting at top of heap
+    template <typename T>
+    void prune(T& heap) {
+        while (!heap.empty()) {
+            int val = heap.top();
+            if (delayed.count(val) && delayed[val] > 0) {
+                delayed[val]--;
+                if (delayed[val] == 0) {
+                    delayed.erase(val);
+                }
+                heap.pop();
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Keep heap sizes balanced
+    void rebalance() {
+        if (smallSize > largeSize + 1) {
+            prune(maxHeap);
+            int val = maxHeap.top();
+            maxHeap.pop();
+            minHeap.push(val);
+            smallSize--;
+            largeSize++;
+            prune(maxHeap);
+        } else if (smallSize < largeSize) {
+            prune(minHeap);
+            int val = minHeap.top();
+            minHeap.pop();
+            maxHeap.push(val);
+            largeSize--;
+            smallSize++;
+            prune(minHeap);
+        }
+    }
+
+    void add(int val) {
+        prune(maxHeap);
+        if (maxHeap.empty() || val <= maxHeap.top()) {
+            maxHeap.push(val);
+            smallSize++;
+        } else {
+            minHeap.push(val);
+            largeSize++;
+        }
+        rebalance();
+    }
+
+    void remove(int val) {
+        // Identify which heap 'val' belongs to BEFORE marking it delayed
+        prune(maxHeap);
+        if (!maxHeap.empty() && val <= maxHeap.top()) {
+            smallSize--;
+        } else {
+            largeSize--;
+        }
+
+        delayed[val]++;
+        prune(maxHeap);
+        prune(minHeap);
+        rebalance();
+    }
+
+    double getMedian(int k) {
+        prune(maxHeap);
+        prune(minHeap);
+
+        if (k % 2 == 1) {
+            return maxHeap.top();
+        } else {
+            // Cast to double to prevent integer overflow during addition
+            return ((double)maxHeap.top() + minHeap.top()) / 2.0;
+        }
+    }
+
+public:
+    vector<double> medianSlidingWindow(vector<int>& nums, int k) {
+        vector<double> result;
+
+        for (int i = 0; i < nums.size(); i++) {
+            add(nums[i]);
+
+            // Window reached size k
+            if (i >= k - 1) {
+                result.push_back(getMedian(k));
+                remove(nums[i - k + 1]); // Slide window forward
+            }
+        }
+
+        return result;
+    }
+};
