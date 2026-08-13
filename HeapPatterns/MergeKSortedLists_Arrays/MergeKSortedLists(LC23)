@@ -1,0 +1,56 @@
+
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+
+class Solution {
+public:
+    // Custom comparator to sort nodes by value in ascending order
+    struct Compare {
+        bool operator()(ListNode* a, ListNode* b) {
+            return a->val > b->val; 
+        }
+    };
+
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        priority_queue<ListNode*, vector<ListNode*>, Compare> minHeap;
+
+        // Step 1: Push the head of every non-empty list into the min-heap
+        for (ListNode* head : lists) {
+            if (head != nullptr) {
+                minHeap.push(head);
+            }
+        }
+
+        // Dummy head to easily build the merged list
+        ListNode dummy(0);
+        ListNode* tail = &dummy;
+
+        // Step 2: Extract the smallest node, attach it, and push its next node
+        while (!minHeap.empty()) {
+            ListNode* minNode = minHeap.top();
+            minHeap.pop();
+
+            tail->next = minNode;
+            tail = tail->next;
+
+            if (minNode->next != nullptr) {
+                minHeap.push(minNode->next);
+            }
+        }
+
+        return dummy.next;
+    }
+};
