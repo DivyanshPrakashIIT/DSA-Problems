@@ -1,0 +1,40 @@
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <queue>
+
+class Solution {
+public:
+    std::string reorganizeString(std::string s) {
+        std::unordered_map<char, int> freqMap;
+        for (char c : s) {
+            freqMap[c]++;
+        }
+
+        // Max-Heap storing pair of {frequency, character}
+        std::priority_queue<std::pair<int, char>> maxHeap;
+        for (auto [ch, count] : freqMap) {
+            if (count > (s.size() + 1) / 2) return ""; // Early check for impossible cases
+            maxHeap.push({count, ch});
+        }
+
+        std::string result = "";
+        while (maxHeap.size() >= 2) {
+            auto [count1, char1] = maxHeap.top(); maxHeap.pop();
+            auto [count2, char2] = maxHeap.top(); maxHeap.pop();
+
+            result += char1;
+            result += char2;
+
+            if (--count1 > 0) maxHeap.push({count1, char1});
+            if (--count2 > 0) maxHeap.push({count2, char2});
+        }
+
+        // Handle the last remaining single character if odd length
+        if (!maxHeap.empty()) {
+            result += maxHeap.top().second;
+        }
+
+        return result;
+    }
+};
