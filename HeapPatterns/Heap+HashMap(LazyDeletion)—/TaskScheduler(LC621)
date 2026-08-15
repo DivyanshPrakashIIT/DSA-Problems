@@ -1,0 +1,46 @@
+#include <vector>
+#include <unordered_map>
+#include <queue>
+
+class Solution {
+public:
+    int leastInterval(std::vector<char>& tasks, int n) {
+        // Step 1: Count frequency of each task
+        std::unordered_map<char, int> counts;
+        for (char t : tasks) {
+            counts[t]++;
+        }
+
+        // Step 2: Push frequencies into Max-Heap
+        std::priority_queue<int> maxHeap;
+        for (auto& pair : counts) {
+            maxHeap.push(pair.second);
+        }
+
+        // Step 3: Queue stores {remaining_count, available_at_time}
+        std::queue<std::pair<int, int>> coolDownQueue;
+        int time = 0;
+
+        while (!maxHeap.empty() || !coolDownQueue.empty()) {
+            time++;
+
+            // Cooldown finished? Move back to Max-Heap
+            if (!coolDownQueue.empty() && coolDownQueue.front().second == time) {
+                maxHeap.push(coolDownQueue.front().first);
+                coolDownQueue.pop();
+            }
+
+            // Pick and execute the highest frequency task
+            if (!maxHeap.empty()) {
+                int remCount = maxHeap.top() - 1;
+                maxHeap.pop();
+
+                if (remCount > 0) {
+                    coolDownQueue.push({remCount, time + n + 1});
+                }
+            }
+        }
+
+        return time;
+    }
+};
