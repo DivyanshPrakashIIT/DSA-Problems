@@ -1,0 +1,46 @@
+#include <string>
+#include <unordered_map>
+#include <queue>
+#include <vector>
+
+class Solution {
+public:
+    std::string rearrangeString(std::string s, int k) {
+        if (k <= 1) return s;
+
+        std::unordered_map<char, int> counts;
+        for (char c : s) {
+            counts[c]++;
+        }
+
+        std::priority_queue<std::pair<int, char>> maxHeap;
+        for (auto [ch, count] : counts) {
+            maxHeap.push({count, ch});
+        }
+
+        std::queue<std::pair<int, char>> coolDownQueue;
+        std::string result = "";
+
+        while (!maxHeap.empty()) {
+            auto [count, ch] = maxHeap.top();
+            maxHeap.pop();
+
+            result += ch;
+            count--;
+
+            // Store in cooldown queue
+            coolDownQueue.push({count, ch});
+
+            // Once distance k is reached, release front element back to Max-Heap
+            if (coolDownQueue.size() >= k) {
+                auto [remCount, remChar] = coolDownQueue.front();
+                coolDownQueue.pop();
+                if (remCount > 0) {
+                    maxHeap.push({remCount, remChar});
+                }
+            }
+        }
+
+        return result.length() == s.length() ? result : "";
+    }
+};
